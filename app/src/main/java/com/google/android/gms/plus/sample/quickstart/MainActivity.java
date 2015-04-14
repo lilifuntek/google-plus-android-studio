@@ -25,6 +25,7 @@ import com.google.android.gms.common.api.ResultCallback;
 import com.google.android.gms.common.api.Scope;
 import com.google.android.gms.plus.People.LoadPeopleResult;
 import com.google.android.gms.plus.Plus;
+import com.google.android.gms.plus.PlusShare;
 import com.google.android.gms.plus.model.people.Person;
 import com.google.android.gms.plus.model.people.PersonBuffer;
 
@@ -34,6 +35,10 @@ import android.app.PendingIntent;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentSender.SendIntentException;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
 import android.util.Log;
@@ -42,6 +47,7 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -58,6 +64,7 @@ import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -65,7 +72,7 @@ import java.util.Set;
 
 /**
  * Android Google+ Quickstart activity.
- *
+ * <p/>
  * Demonstrates Google+ Sign-In and usage of the Google+ APIs to retrieve a
  * users profile information.
  */
@@ -145,11 +152,17 @@ public class MainActivity extends FragmentActivity implements
     private SignInButton mSignInButton;
     private Button mSignOutButton;
     private Button mRevokeButton;
+    private  Button shareButton;
+    private  Button share_image_button;
     private TextView mStatus;
     private ListView mCirclesListView;
     private ArrayAdapter<String> mCirclesAdapter;
     private ArrayList<String> mCirclesList;
 
+        private ImageView imgProfilePic;
+
+    // Profile pic image size in pixels
+    private static final int PROFILE_PIC_SIZE = 400;
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -160,12 +173,15 @@ public class MainActivity extends FragmentActivity implements
         mRevokeButton = (Button) findViewById(R.id.revoke_access_button);
         mStatus = (TextView) findViewById(R.id.sign_in_status);
         mCirclesListView = (ListView) findViewById(R.id.circles_list);
-
+        shareButton = (Button) findViewById(R.id.share_button);
+        share_image_button = (Button) findViewById(R.id.share_image_button);
+        imgProfilePic = (ImageView) findViewById(R.id.imgProfilePic);
         // Button listeners
         mSignInButton.setOnClickListener(this);
         mSignOutButton.setOnClickListener(this);
         mRevokeButton.setOnClickListener(this);
-
+        shareButton.setOnClickListener(this);
+        share_image_button.setOnClickListener(this);
         // CheckBox listeners
         ((CheckBox) findViewById(R.id.request_auth_code_checkbox)).setOnCheckedChangeListener(this);
         ((CheckBox) findViewById(R.id.has_token_checkbox)).setOnCheckedChangeListener(this);
@@ -181,6 +197,7 @@ public class MainActivity extends FragmentActivity implements
         }
 
         mGoogleApiClient = buildGoogleApiClient();
+
     }
 
     private GoogleApiClient buildGoogleApiClient() {
@@ -255,6 +272,29 @@ public class MainActivity extends FragmentActivity implements
                     mGoogleApiClient = buildGoogleApiClient();
                     mGoogleApiClient.connect();
                     break;
+
+
+                case R.id.share_button:
+                    Intent shareIntent = new PlusShare.Builder(this)
+                            .setType("text/plain")
+                            .setText("Welcome to the Google+ platform.")
+                            .setContentUrl(Uri.parse("https://developers.google.com/+/"))
+                            .getIntent();
+
+                    startActivityForResult(shareIntent, 0);
+                    break;
+
+//                case R.id.share_image_button:
+//                    Intent shareIntent2 = new PlusShare.Builder(this)
+//                            .setType("text/plain")
+//                            .setText("Welcome to the Google+ platform.")
+//                            .set
+//                            .setContentUrl(Uri.parse("https://developers.google.com/+/"))
+//                            .getIntent();
+//
+//                    startActivityForResult(shareIntent2, 0);
+//                    break;
+
             }
         }
     }
@@ -297,11 +337,29 @@ public class MainActivity extends FragmentActivity implements
         findViewById(R.id.layout_server_auth).setVisibility(View.GONE);
 
         // Retrieve some profile information to personalize our app for the user.
+
+
+
         Person currentUser = Plus.PeopleApi.getCurrentPerson(mGoogleApiClient);
 
+        String email = Plus.AccountApi.getAccountName(mGoogleApiClient);
         mStatus.setText(String.format(
                 getResources().getString(R.string.signed_in_as),
-                currentUser.getDisplayName()));
+                currentUser.getDisplayName())+", email: " + email);
+        String personPhotoUrl = currentUser.getImage().getUrl();
+        personPhotoUrl = personPhotoUrl.substring(0,
+                personPhotoUrl.length() - 2)
+                + PROFILE_PIC_SIZE;
+        new LoadProfileImage(imgProfilePic).execute(personPhotoUrl);
+//        String email = Plus.AccountApi.getAccountName(mGoogleApiClient);
+//        Log.i("test", "test");
+        Log.i("getUrl", currentUser.getUrl());
+        Log.i("test", "test");
+//        Log.i("getAboutMe", currentUser.getAboutMe());
+//        Log.i("email", email);
+        Log.i("", currentUser.getId());
+
+        Log.i("test", "test");
 
         Plus.PeopleApi.loadVisible(mGoogleApiClient, null)
                 .setResultCallback(this);
@@ -591,4 +649,32 @@ public class MainActivity extends FragmentActivity implements
             dialog.show();
         }
     }
+    /**
+     * Background Async task to load user profile picture from url
+     * */
+    private class LoadProfileImage extends AsyncTask<String, Void, Bitmap> {
+        ImageView bmImage;
+
+        public LoadProfileImage(ImageView bmImage) {
+            this.bmImage = bmImage;
+        }
+
+        protected Bitmap doInBackground(String... urls) {
+            String urldisplay = urls[0];
+            Bitmap mIcon11 = null;
+            try {
+                InputStream in = new java.net.URL(urldisplay).openStream();
+                mIcon11 = BitmapFactory.decodeStream(in);
+            } catch (Exception e) {
+                Log.e("Error", e.getMessage());
+                e.printStackTrace();
+            }
+            return mIcon11;
+        }
+
+        protected void onPostExecute(Bitmap result) {
+            bmImage.setImageBitmap(result);
+        }
+    }
+
 }

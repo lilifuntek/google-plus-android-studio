@@ -118,4 +118,21 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:padding="0dip" />
+    <ImageView
+        android:id="@+id/imgProfilePic"
+        android:layout_width="80dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"/>
+    <Button
+        android:id="@+id/share_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Share text and url  on Google+"
+        />
+    <Button
+        android:id="@+id/share_image_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Share image on Google+"
+        />
 </LinearLayout>
