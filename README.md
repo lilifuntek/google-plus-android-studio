@@ -7,3 +7,8 @@ Sample application demonstrating the following features:
 
 For more information on how to build and run this sample, see
 [the quickstart documentation here](https://developers.google.com/+/quickstart/android).
+
+以上為來源
+
+在這個DEMO裡增加了顯示email，ID
+大頭貼和分享圖片及連結的選項。
